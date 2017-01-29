@@ -7,6 +7,7 @@ import {
   GraphQLList,
   GraphQLNonNull,
 } from 'graphql';
+import {MongoClient} from 'mongodb';
 
 
 const Contact = new GraphQLObjectType({
@@ -33,7 +34,20 @@ const Query = new GraphQLObjectType({
       args: {
         _id: {type: new GraphQLNonNull(GraphQLString)}
       },
-      resolve() {
+      resolve(source, {_id}) {
+        MongoClient.connect('mongodb://localhost:32768/contact', (err, db) => {
+          console.log(123);
+          if (err) {
+            console.log(err);
+            return;
+          }
+
+          // TODO: find
+        });
+
+
+
+
         // TODO: mongo
         return {
           _id: '568abef565368511002b9698',

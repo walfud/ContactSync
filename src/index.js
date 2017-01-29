@@ -16,3 +16,14 @@ app.post('/graphql', (req, res) => {
 app.listen(3000, function() {
   console.log('start');
 });
+
+
+// query _ {
+// 	me(_id: "") {
+// 		_id,
+// 		contacts {
+// 			_id,
+// 			phone,
+// 		}
+// 	}
+// }
