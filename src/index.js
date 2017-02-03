@@ -27,3 +27,13 @@ app.listen(3000, function() {
 // 		}
 // 	}
 // }
+
+// mutation _ {
+// 	set(_id: "b", contacts: [{phone: "b.1"}]) {
+// 		_id,
+// 		contacts {
+// 			_id,
+// 			phone,
+// 		}
+// 	}
+// }

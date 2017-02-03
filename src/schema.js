@@ -4,6 +4,7 @@ import {
   GraphQLInt,
   GraphQLString,
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLList,
   GraphQLNonNull,
 } from 'graphql';
@@ -73,8 +74,47 @@ const Query = new GraphQLObjectType({
 });
 
 
+const ContactInput = new GraphQLInputObjectType({
+  name: 'ContactInput',
+  fields: {
+    phone: {type: GraphQLString},
+  }
+});
+const Mutation = new GraphQLObjectType({
+  name: 'RootMutation',
+  fields: {
+    set: {
+      type: Me,
+      args: {
+        _id: {type: new GraphQLNonNull(GraphQLString)},
+        contacts: {type: new GraphQLList(ContactInput)},
+      },
+      resolve(source, args) {
+        return new Promise((resolve, reject) => {
+          MongoClient.connect('mongodb://mongo.t1.daoapp.io:61131/contact', (err, db) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+
+            db.collection('mes').updateOne({_id: args._id}, args, {upsert: true}, (err, result) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+
+              resolve(args);
+            });
+          });
+        });
+      }
+    }
+  }
+});
+
 const Schema = new GraphQLSchema({
   query: Query,
+  mutation: Mutation,
 });
 
 export default Schema;
