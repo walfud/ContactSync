@@ -34,34 +34,39 @@ const Query = new GraphQLObjectType({
       args: {
         _id: {type: new GraphQLNonNull(GraphQLString)}
       },
-      resolve(source, {_id}) {
-        MongoClient.connect('mongodb://localhost:32768/contact', (err, db) => {
-          console.log(123);
-          if (err) {
-            console.log(err);
-            return;
-          }
+      resolve(source, args) {
+        // TODO: db.close
+        return new Promise((resolve, reject) => {
+          MongoClient.connect('mongodb://mongo.t1.daoapp.io:61131/contact', (err, db) => {
+            if (err) {
+              reject(err);
+              return;
+            }
 
-          // TODO: find
+            db.collection('mes').find(args).toArray((err, docs) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+
+              resolve(docs[0]);
+            });
+          });
         });
 
-
-
-
-        // TODO: mongo
-        return {
-          _id: '568abef565368511002b9698',
-          contacts: [
-            {
-              _id: '1111111111111111111111',
-              phone: '13911592475',
-            },
-            {
-              _id: '2222222222222222222222222',
-              phone: '18618817397',
-            },
-          ],
-        }
+        // return {
+        //   _id: '568abef565368511002b9698',
+        //   contacts: [
+        //     {
+        //       _id: '1111111111111111111111',
+        //       phone: '13911592475',
+        //     },
+        //     {
+        //       _id: '2222222222222222222222222',
+        //       phone: '18618817397',
+        //     },
+        //   ],
+        // }
       }
     }
   }
