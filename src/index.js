@@ -17,6 +17,7 @@ app.listen(3000, function() {
   console.log('start');
 });
 
+// nodemon -x "bash -c './node_modules/babel-cli/bin/babel-node.js --presets es2015 src/index.js'"
 
 // query _ {
 // 	me(_id: "") {

@@ -52,6 +52,7 @@ const Query = new GraphQLObjectType({
                 return;
               }
 
+              console.log(`Query: ${me._id}`);
               resolve(docs[0]);
             });
           });
@@ -95,6 +96,7 @@ const Mutation = new GraphQLObjectType({
       },
       resolve(source, me) {
         return new Promise((resolve, reject) => {
+          // TODO: db.close
           MongoClient.connect('mongodb://mongo.t1.daoapp.io:61131/contact', (err, db) => {
             if (err) {
               reject(err);
