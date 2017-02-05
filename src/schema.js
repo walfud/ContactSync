@@ -27,6 +27,8 @@ const Me = new GraphQLObjectType({
   fields: {
     _id: {type: GraphQLID},
     client_id: {type: GraphQLID},
+    email: {type: GraphQLString},
+    password: {type: GraphQLString},
     contacts: {type: new GraphQLList(Contact)},
   }
 });
@@ -49,14 +51,14 @@ const Query = new GraphQLObjectType({
               return;
             }
 
-            db.collection('mes').find(me).toArray((err, docs) => {
+            db.collection('mes').findOne(me, (err, me) => {
               if (err) {
                 reject(err);
                 return;
               }
 
               console.log(`Query: ${me._id}`);
-              resolve(docs[0]);
+              resolve(me);
             });
           });
         });
@@ -78,6 +80,61 @@ const ContactInput = new GraphQLInputObjectType({
 const Mutation = new GraphQLObjectType({
   name: 'RootMutation',
   fields: {
+    login: {
+      type: GraphQLString,
+      args: {
+        email: {type: new GraphQLNonNull(GraphQLString)},
+        password: {type: new GraphQLNonNull(GraphQLString)},
+        client_id: {type: new GraphQLNonNull(GraphQLString)},
+      },
+      resolve(source, {email, password, client_id}) {
+        return new Promise((resolve, reject) => {
+          // TODO: db.close
+          MongoClient.connect('mongodb://mongo.t1.daoapp.io:61131/contact', (err, db) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+
+            // Merge
+            db.collection('mes').findOne({email}, (err, doc) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+
+              if (!doc) {
+                // Regist
+                console.log(`Regist: ${email} - ${client_id}`);
+
+                const newMe = {};
+                newMe._id = new ObjectID();
+                newMe.client_id = client_id;
+                newMe.email = email;
+                newMe.password = password;  // TODO: encript
+                db.collection('mes').insertOne(newMe, (err, result) => {
+                  if (err) {
+                    reject(err);
+                    return;
+                  }
+
+                  resolve(newMe._id);
+                });
+              } else {
+                // Login
+                if (password != doc.password) {   // TODO: encript
+                  reject(new Error(`Login fail: Wrong password`));
+                } else {
+                  console.log(`Login: ${email} - ${client_id}`);
+                  resolve(doc._id);
+                }
+              }
+            });
+          });
+        });
+      }
+    },
+
     set: {
       type: Me,
       args: {
