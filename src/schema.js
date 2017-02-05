@@ -17,6 +17,8 @@ const Contact = new GraphQLObjectType({
   name: 'Contact',
   fields: {
     _id: {type: GraphQLID},
+    client_id: {type: GraphQLID},
+    name: {type: GraphQLString},
     phone: {type: GraphQLString},
   }
 });
@@ -24,6 +26,7 @@ const Me = new GraphQLObjectType({
   name: 'Me',
   fields: {
     _id: {type: GraphQLID},
+    client_id: {type: GraphQLID},
     contacts: {type: new GraphQLList(Contact)},
   }
 });
@@ -57,20 +60,6 @@ const Query = new GraphQLObjectType({
             });
           });
         });
-
-        // return {
-        //   _id: '568abef565368511002b9698',
-        //   contacts: [
-        //     {
-        //       _id: '1111111111111111111111',
-        //       phone: '13911592475',
-        //     },
-        //     {
-        //       _id: '2222222222222222222222222',
-        //       phone: '18618817397',
-        //     },
-        //   ],
-        // }
       }
     }
   }
@@ -80,7 +69,8 @@ const Query = new GraphQLObjectType({
 const ContactInput = new GraphQLInputObjectType({
   name: 'ContactInput',
   fields: {
-    name: {type: new GraphQLNonNull(GraphQLString)},
+    client_id: {type: new GraphQLNonNull(GraphQLString)},
+    name: {type: GraphQLString},
     phone: {type: GraphQLString},
     delete: {type: GraphQLBoolean},
   }
@@ -92,6 +82,7 @@ const Mutation = new GraphQLObjectType({
       type: Me,
       args: {
         _id: {type: new GraphQLNonNull(GraphQLString)},
+        client_id: {type: new GraphQLNonNull(GraphQLString)},
         contacts: {type: new GraphQLList(ContactInput)},
       },
       resolve(source, me) {
@@ -107,19 +98,11 @@ const Mutation = new GraphQLObjectType({
             db.collection('mes').findOne({_id: me._id}, (err, doc) => {
               let newMe = {};
               newMe._id = me._id;
+              newMe.client_id = me.client_id;
               newMe.contacts = [];
 
-              if (!doc) {
-                // New
-                console.log(me);
-                console.log(me.contacts);
-                console.log(`New contacts: '${util.inspect(me.contacts)}'`);
-
-                newMe.contacts = me.contacts;
-              } else {
+              if (doc) {
                 // Merge by phone number
-                console.log(`Merge contacts: '${util.inspect(me.contacts)}'`);
-
                 const idMap = new Map();
                 for (let contact of doc.contacts) {
                   idMap.set(contact._id, contact);
@@ -130,50 +113,40 @@ const Mutation = new GraphQLObjectType({
                 }).forEach((contactInput, index, contactsInput) => {
                   if (contactInput.delete) {
                     // Delete
-                    console.log(`delete: '${contactInput.name}'`);
+                    console.log(`delete contact: '${contactInput.name}'`);
 
                     idMap.delete(contactInput._id);
                   } else {
                     // Update
-                    console.log(`update: '${contactInput.name}'`);
+                    console.log(`update contact: '${contactInput.name}'`);
 
-                    let updateContact = {};
-                    updateContact._id = contactInput._id;
+                    const updateContact = idMap.get(contactInput._id);
+                    updateContact.client_id = contactInput.client_id;
                     updateContact.name = contactInput.name;
                     updateContact.phone = contactInput.phone;
-                    idMap.set(contactInput._id, updateContact);
                   }
                 });
-                // Merge new item by phone number
-                const phoneMap = new Map();
-                idMap.forEach((contact, _id, idMap) => {
-                  phoneMap.set(contact.phone, contact);
-                });
-                me.contacts.filter((contactInput) => {
-                  return !contactInput._id;
-                }).forEach((contactInput, index, contactsInput) => {
-                  console.log(`new: '${contactInput.name}'`);
 
+                newMe.contacts.push(...Array.from(idMap.values()));
+              }
+              // Add new item by phone number
+              me.contacts.filter((contactInput) => {
+                return !contactInput._id;
+              }).forEach((contactInput, index, contactsInput) => {
+                if (!newMe.contacts.find((contact, index, contacts) => contact.client_id == contactInput.client_id)) {
+                  console.log(`new contact: '${contactInput.name}'`);
                   let newContact = {};
-                  newContact._id = contactInput._id;
+                  newContact._id = new ObjectID();
+                  newContact.client_id = contactInput.client_id;
                   newContact.name = contactInput.name;
                   newContact.phone = contactInput.phone;
-                  phoneMap.set(contactInput.phone, newContact);
-                });
-
-                newMe.contacts = Array.from(phoneMap.values());
-              }
-
-              // Fill mongo's _id
-              newMe.contacts.forEach((contact, index, contacts) => {
-                if (!contact._id || !ObjectID.isValid(contact._id)) {
-                  contact._id = new ObjectID();
-
-                  console.log(`new _id for: '${contact._id}' - '${contact.name}'`);
+                  newMe.contacts.push(newContact);
+                } else {
+                  console.log(`pass contact: '${contactInput.name}'`);
                 }
               });
 
-              //
+              // Db
               db.collection('mes').updateOne({_id: newMe._id}, newMe, {upsert: true}, (err, result) => {
                 if (err) {
                   reject(err);
