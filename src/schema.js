@@ -42,7 +42,7 @@ const Query = new GraphQLObjectType({
       args: {
         _id: {type: new GraphQLNonNull(GraphQLString)}
       },
-      resolve(source, me) {
+      resolve(source, {_id}) {
         // TODO: db.close
         return new Promise((resolve, reject) => {
           MongoClient.connect('mongodb://mongo.t1.daoapp.io:61131/contact', (err, db) => {
@@ -51,13 +51,13 @@ const Query = new GraphQLObjectType({
               return;
             }
 
-            db.collection('mes').findOne(me, (err, me) => {
+            db.collection('mes').findOne({_id}, (err, me) => {
               if (err) {
                 reject(err);
                 return;
               }
 
-              console.log(`Query: ${me._id}`);
+              console.log(`Query: ${_id}`);
               resolve(me);
             });
           });
@@ -153,39 +153,42 @@ const Mutation = new GraphQLObjectType({
 
             // Merge
             db.collection('mes').findOne({_id: me._id}, (err, doc) => {
+              if (!doc) {
+                reject(new Error(`No such user: ${me.email}`));
+                return;
+              }
+
               let newMe = {};
               newMe._id = me._id;
               newMe.client_id = me.client_id;
               newMe.contacts = [];
 
-              if (doc) {
-                // Merge by phone number
-                const idMap = new Map();
-                for (let contact of doc.contacts) {
-                  idMap.set(contact._id, contact);
-                }
-                // Replace update and delete item
-                me.contacts.filter((contactInput) => {
-                  return contactInput._id;
-                }).forEach((contactInput, index, contactsInput) => {
-                  if (contactInput.delete) {
-                    // Delete
-                    console.log(`delete contact: '${contactInput.name}'`);
-
-                    idMap.delete(contactInput._id);
-                  } else {
-                    // Update
-                    console.log(`update contact: '${contactInput.name}'`);
-
-                    const updateContact = idMap.get(contactInput._id);
-                    updateContact.client_id = contactInput.client_id;
-                    updateContact.name = contactInput.name;
-                    updateContact.phone = contactInput.phone;
-                  }
-                });
-
-                newMe.contacts.push(...Array.from(idMap.values()));
+              // Merge by phone number
+              const idMap = new Map();
+              for (let contact of doc.contacts) {
+                idMap.set(contact._id, contact);
               }
+              // Replace update and delete item
+              me.contacts.filter((contactInput) => {
+                return contactInput._id;
+              }).forEach((contactInput, index, contactsInput) => {
+                if (contactInput.delete) {
+                  // Delete
+                  console.log(`delete contact: '${contactInput.name}'`);
+
+                  idMap.delete(contactInput._id);
+                } else {
+                  // Update
+                  console.log(`update contact: '${contactInput.name}'`);
+
+                  const updateContact = idMap.get(contactInput._id);
+                  updateContact.client_id = contactInput.client_id;
+                  updateContact.name = contactInput.name;
+                  updateContact.phone = contactInput.phone;
+                }
+              });
+
+              newMe.contacts.push(...Array.from(idMap.values()));
               // Add new item by phone number
               me.contacts.filter((contactInput) => {
                 return !contactInput._id;
