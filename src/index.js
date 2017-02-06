@@ -20,11 +20,21 @@ app.listen(3000, function() {
 // nodemon -x "bash -c './node_modules/babel-cli/bin/babel-node.js --presets es2015 src/index.js'"
 
 // mutation _ {
-// 	login(email: "hi@walfud.com", password: "123456", client_id: "710b962e-041c-11e1-9234-0123456789ab")
+// 	login(email: "hi@walfud.com", password: "123456", client_id: "710b962e-041c-11e1-9234-0123456789ab") {
+// 		_id,
+// 		email,
+// 		password,
+// 		contacts {
+// 			_id,
+// 			client_id,
+// 			name,
+// 			phone,
+// 		}
+// 	}
 // }
 
 // mutation _ {
-// 	set(_id: "5896c20417870c0a880defba", client_id: "710b962e-041c-11e1-9234-0123456789ab",  contacts: [{client_id: "fa1dd4f6-9f42-44b2-8588-4838f9a3f5fe", name: "china mobile", phone: "13800138000"}]) {
+// 	set(_id: "5897e43befed642f900193cc", client_id: "710b962e-041c-11e1-9234-0123456789ab",  contacts: [{client_id: "fa1dd4f6-9f42-44b2-8588-4838f9a3f5fe", name: "china mobile", phone: "13800138000"}]) {
 // 		_id,
 // 		client_id,
 // 		contacts {
@@ -36,12 +46,13 @@ app.listen(3000, function() {
 // }
 
 // query _ {
-// 	me(_id: "5896c20417870c0a880defba") {
+// 	me(_id: "5897e43befed642f900193cc") {
 // 		_id,
 // 		client_id,
 // 		contacts {
 // 			_id,
 // 			client_id,
+// 			name,
 // 			phone,
 // 		}
 // 	}

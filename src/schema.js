@@ -51,7 +51,7 @@ const Query = new GraphQLObjectType({
               return;
             }
 
-            db.collection('mes').findOne({_id}, (err, me) => {
+            db.collection('mes').findOne({_id: ObjectID.createFromHexString(_id)}, (err, me) => {
               if (err) {
                 reject(err);
                 return;
@@ -81,7 +81,7 @@ const Mutation = new GraphQLObjectType({
   name: 'RootMutation',
   fields: {
     login: {
-      type: GraphQLString,
+      type: Me,
       args: {
         email: {type: new GraphQLNonNull(GraphQLString)},
         password: {type: new GraphQLNonNull(GraphQLString)},
@@ -105,20 +105,20 @@ const Mutation = new GraphQLObjectType({
 
               if (!doc) {
                 // Regist
-                console.log(`Regist: ${email} - ${client_id}`);
-
                 const newMe = {};
                 newMe._id = new ObjectID();
                 newMe.client_id = client_id;
                 newMe.email = email;
                 newMe.password = password;  // TODO: encript
+                newMe.contacts = [];
                 db.collection('mes').insertOne(newMe, (err, result) => {
                   if (err) {
                     reject(err);
                     return;
                   }
 
-                  resolve(newMe._id);
+                  console.log(`Regist: ${email} - ${client_id}`);
+                  resolve(newMe);
                 });
               } else {
                 // Login
@@ -126,7 +126,7 @@ const Mutation = new GraphQLObjectType({
                   reject(new Error(`Login fail: Wrong password`));
                 } else {
                   console.log(`Login: ${email} - ${client_id}`);
-                  resolve(doc._id);
+                  resolve(doc);
                 }
               }
             });
@@ -142,7 +142,7 @@ const Mutation = new GraphQLObjectType({
         client_id: {type: new GraphQLNonNull(GraphQLString)},
         contacts: {type: new GraphQLList(ContactInput)},
       },
-      resolve(source, me) {
+      resolve(source, {_id, client_id, contacts}) {
         return new Promise((resolve, reject) => {
           // TODO: db.close
           MongoClient.connect('mongodb://mongo.t1.daoapp.io:61131/contact', (err, db) => {
@@ -152,16 +152,16 @@ const Mutation = new GraphQLObjectType({
             }
 
             // Merge
-            db.collection('mes').findOne({_id: me._id}, (err, doc) => {
+            db.collection('mes').findOne({_id: ObjectID.createFromHexString(_id)}, (err, doc) => {
               if (!doc) {
-                reject(new Error(`No such user: ${me.email}`));
+                reject(new Error(`No such user: ${_id}`));
                 return;
               }
 
-              let newMe = {};
-              newMe._id = me._id;
-              newMe.client_id = me.client_id;
-              newMe.contacts = [];
+              if (doc.client_id != client_id) {
+                reject(new Error(`\`client_id\` not equal: current(${client_id}) - old(${doc.client_id})`));
+                return;
+              }
 
               // Merge by phone number
               const idMap = new Map();
@@ -169,7 +169,7 @@ const Mutation = new GraphQLObjectType({
                 idMap.set(contact._id, contact);
               }
               // Replace update and delete item
-              me.contacts.filter((contactInput) => {
+              contacts.filter((contactInput) => {
                 return contactInput._id;
               }).forEach((contactInput, index, contactsInput) => {
                 if (contactInput.delete) {
@@ -188,32 +188,32 @@ const Mutation = new GraphQLObjectType({
                 }
               });
 
-              newMe.contacts.push(...Array.from(idMap.values()));
+              doc.contacts = Array.from(idMap.values());
               // Add new item by phone number
-              me.contacts.filter((contactInput) => {
+              contacts.filter((contactInput) => {
                 return !contactInput._id;
               }).forEach((contactInput, index, contactsInput) => {
-                if (!newMe.contacts.find((contact, index, contacts) => contact.client_id == contactInput.client_id)) {
+                if (!doc.contacts.find((contact, index, contacts) => contact.client_id == contactInput.client_id)) {
                   console.log(`new contact: '${contactInput.name}'`);
                   let newContact = {};
                   newContact._id = new ObjectID();
                   newContact.client_id = contactInput.client_id;
                   newContact.name = contactInput.name;
                   newContact.phone = contactInput.phone;
-                  newMe.contacts.push(newContact);
+                  doc.contacts.push(newContact);
                 } else {
                   console.log(`pass contact: '${contactInput.name}'`);
                 }
               });
 
               // Db
-              db.collection('mes').updateOne({_id: newMe._id}, newMe, {upsert: true}, (err, result) => {
+              db.collection('mes').updateOne({_id: doc._id}, doc, (err, result) => {
                 if (err) {
                   reject(err);
                   return;
                 }
 
-                resolve(newMe);
+                resolve(doc);
               });
             });
           });
