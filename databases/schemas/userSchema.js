@@ -4,11 +4,12 @@ const userSchema = new mongoose.Schema({
     oid: String,
     token: String,
     refresh_token: String,
+    username: String,
 
     contacts: [{
         id: String,
         name: String,
-        phone_num: String,
+        phone: String,
     }],
 });
 

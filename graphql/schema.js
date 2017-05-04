@@ -1,48 +1,61 @@
 const GraphQLBoolean = require('graphql').GraphQLBoolean;
+const GraphQLEnumType = require('graphql').GraphQLEnumType;
+const GraphQLFloat = require('graphql').GraphQLFloat;
 const GraphQLID = require('graphql').GraphQLID;
+const GraphQLInputObjectType = require('graphql').GraphQLInputObjectType;
 const GraphQLInt = require('graphql').GraphQLInt;
+const GraphQLInterfaceType = require('graphql').GraphQLInterfaceType;
+const GraphQLList = require('graphql').GraphQLList;
 const GraphQLNonNull = require('graphql').GraphQLNonNull;
 const GraphQLObjectType = require('graphql').GraphQLObjectType;
+const GraphQLScalarType = require('graphql').GraphQLScalarType;
 const GraphQLSchema = require('graphql').GraphQLSchema;
 const GraphQLString = require('graphql').GraphQLString;
-const GraphQLList = require('graphql').GraphQLList;
+const GraphQLUnionType = require('graphql').GraphQLUnionType;
 
-const Contact = new GraphQLObjectType({
-    name: 'Contact',
+const UserModel = require('../services/db').UserModel;
+const network = require('../services/network');
+
+const ContactType = new GraphQLObjectType({
+    name: 'ContactType',
     fields: {
-        id: {type: GraphQLID},
-        name: {type: GraphQLString},
-        phone: {type: GraphQLString},
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        phone: { type: GraphQLString },
     }
 });
-const User = new GraphQLObjectType({
-  name: 'User',
-  fields: {
-    oid: {type: GraphQLID},
-    token: {type: GraphQLString},
-    refresh_token: {type: GraphQLString},
-
-    contacts: {type: new GraphQLList(Contact)},
-  }
+const UserType = new GraphQLObjectType({
+    name: 'UserType',
+    fields: {
+        username: { type: GraphQLString },
+        contacts: { type: new GraphQLList(ContactType) },
+    }
 });
 const Query = new GraphQLObjectType({
-  name: 'Query',
-  fields: {
-    user: {
-      type: User,
-      args: {
-        token: {type: new GraphQLNonNull(GraphQLString)}
-      },
-      resolve(source, {token}) {
-        return[];
-      }
-    }
-  }
+    name: 'Query',
+    fields: {
+        me: {
+            type: UserType,
+            args: {
+                token: { type: new GraphQLNonNull(GraphQLString) },
+                refresh_token: { type: new GraphQLNonNull(GraphQLString) },
+            },
+            async resolve(source, { token, refresh_token }) {
+                const oid = await network.getOauthId(token, refresh_token);
+                const { username, contacts } = await UserModel.findOne({ oid }).exec();
+
+                return {
+                    username,
+                    contacts,
+                }
+            }
+        }
+    },
 });
 
 const schema = new GraphQLSchema({
-  query: Query,
-//  mutation: Mutation,
+    query: Query,
+    //  mutation: Mutation,
 });
 
 module.exports = schema;
