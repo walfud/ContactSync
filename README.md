@@ -4,7 +4,7 @@
 
 Query
 ```graphql
-query oid($token: String!) {
+query ($token: String!) {
   contacts(token: $token) {
     id
     name
