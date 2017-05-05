@@ -34,8 +34,7 @@ const Query = new GraphQLObjectType({
                 token: { type: new GraphQLNonNull(GraphQLString) },
             },
             async resolve(source, { token }) {
-                const { contacts } = await getMe(token);
-                return contacts;
+                return await getContacts(token);
             }
         },
     },
@@ -64,18 +63,16 @@ const Mutation = new GraphQLObjectType({
                     return contact;
                 })
                 await UserModel.update({ oid }, { oid, contacts: contactsWithId, }, { upsert: true }).exec();
-                return contacts;
+
+                return contacts || [];
             }
         }
     },
 });
 
-async function getMe(token) {
+async function getContacts(token) {
     const oid = await network.getOauthId(token);
-    return await UserModel.findOne({ oid }).exec();
-}
-function isSameContact(a, b) {
-    return a.name == b.name && a.phone == b.phone;
+    return UserModel.findOne({ oid }).exec().then(user => user ? user.contacts : []);
 }
 
 const schema = new GraphQLSchema({

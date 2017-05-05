@@ -20,7 +20,7 @@ function getOauthId(token) {
     //             throw `${res.status} ${res.statusText}\n${res.url}\n${body}`;
     //         }
     //     });
-    return Promise.resolve('oid1');
+    return Promise.resolve(token);
 }
 
 module.exports = {
