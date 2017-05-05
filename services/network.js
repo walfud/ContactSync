@@ -11,9 +11,11 @@ function getOauthId(token, refreshToken) {
     return fetch(`http://oauth2.walfud.com/oid?${param}`)
         .then(async res => {
             try {
-                return await res.json();
+                const body = await res.json();
+                return body.oid;
             } catch (err) {
-                throw `${res.status}: ${res.statusText}\n${res.url}`;
+                const text = await res.text();
+                throw `${res.status}: ${res.statusText}\n${res.url}\n${text}`;
             }
         });
 }
