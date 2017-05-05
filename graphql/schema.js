@@ -25,28 +25,19 @@ const ContactType = new GraphQLObjectType({
         phone: { type: GraphQLString },
     }
 });
-const UserType = new GraphQLObjectType({
-    name: 'UserType',
-    fields: {
-        contacts: { type: new GraphQLList(ContactType) },
-    }
-});
 const Query = new GraphQLObjectType({
     name: 'Query',
     fields: {
-        me: {
-            type: UserType,
+        contacts: {
+            type: new GraphQLList(ContactType),
             args: {
                 token: { type: new GraphQLNonNull(GraphQLString) },
             },
             async resolve(source, { token }) {
                 const { contacts } = await getMe(token);
-
-                return {
-                    contacts,
-                }
+                return contacts;
             }
-        }
+        },
     },
 });
 
@@ -57,42 +48,9 @@ const ContactInputType = new GraphQLInputObjectType({
         phone: { type: GraphQLString },
     }
 });
-const TestType = new GraphQLObjectType({
-    name: 'TestType',
-    fields: {
-        add: { type: new GraphQLList(ContactType) },
-        del: { type: new GraphQLList(ContactType) },
-    }
-})
 const Mutation = new GraphQLObjectType({
     name: 'Mutation',
     fields: {
-        test: {
-            type: TestType,
-            args: {
-                token: { type: new GraphQLNonNull(GraphQLString) },
-                contacts: { type: new GraphQLNonNull(new GraphQLList(ContactInputType)) }
-            },
-            async resolve(source, { token, contacts }) {
-                const { contacts: oldContacts } = await getMe(token);
-                let add = [], unmodify = [], del = [];
-                for (let contact of contacts) {
-                    let index = oldContacts.findIndex(oldContact => contact.name == oldContact && contact.phone == oldContact.phone);
-
-                    if (index == -1) {
-                        add.push(contact);
-                    } else {
-                        unmodify.push(contact);
-                        oldContacts.splice(index, 1);
-                    }
-                }
-                del = oldContacts;
-
-                return {
-                    add, del
-                };
-            }
-        },
         sync: {
             type: new GraphQLList(ContactType),
             args: {
