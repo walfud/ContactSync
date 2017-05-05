@@ -38,10 +38,9 @@ const Query = new GraphQLObjectType({
             type: UserType,
             args: {
                 token: { type: new GraphQLNonNull(GraphQLString) },
-                refresh_token: { type: new GraphQLNonNull(GraphQLString) },
             },
-            async resolve(source, { token, refresh_token }) {
-                const oid = await network.getOauthId(token, refresh_token);
+            async resolve(source, { token }) {
+                const oid = await network.getOauthId(token);
                 const { username, contacts } = await UserModel.findOne({ oid }).exec();
 
                 return {
@@ -53,9 +52,32 @@ const Query = new GraphQLObjectType({
     },
 });
 
+// const SyncType = new GraphQLObjectType({
+// });
+// const Mutation = new GraphQLObjectType({
+//     name: 'Mutation',
+//     fields: {
+//         sync: {
+//             type: SyncType,
+//             args: {
+//                 token: { type: new GraphQLNonNull(GraphQLString) },
+//             },
+//             async resolve(source, { token }) {
+//                 const oid = await network.getOauthId(token);
+//                 const { username, contacts } = await UserModel.findOne({ oid }).exec();
+
+//                 return {
+//                     username,
+//                     contacts,
+//                 }
+//             }
+//         }
+//     },
+// });
+
 const schema = new GraphQLSchema({
     query: Query,
-    //  mutation: Mutation,
+    // mutation: Mutation,
 });
 
 module.exports = schema;
