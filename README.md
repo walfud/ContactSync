@@ -1,6 +1,6 @@
 # ContactSync
 
-[TEST](http://localhost:3000/graphql)
+[TEST](http://localhost:51955/graphql)
 
 Query
 ```graphql

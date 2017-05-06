@@ -14,4 +14,4 @@ app.use(bodyParser());
 app.use(index.routes());
 app.use(graphql.routes());
 
-app.listen(3000);
+app.listen(51955);
