@@ -22,7 +22,7 @@ const ContactType = new GraphQLObjectType({
     fields: {
         id: { type: GraphQLID },
         name: { type: GraphQLString },
-        phone: { type: GraphQLString },
+        phone: { type: new GraphQLList(GraphQLString) },
     }
 });
 const Query = new GraphQLObjectType({
@@ -44,7 +44,7 @@ const ContactInputType = new GraphQLInputObjectType({
     name: 'ContactInputType',
     fields: {
         name: { type: GraphQLString },
-        phone: { type: GraphQLString },
+        phone: { type: new GraphQLList(GraphQLString) },
     }
 });
 const Mutation = new GraphQLObjectType({

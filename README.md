@@ -32,10 +32,10 @@ variable
   "token": "oid1",
   "contacts": [{
     "name": "a",
-    "phone": "11"
+    "phone": ["1"]
   },{
     "name": "b",
-    "phone": "22ccccc2222"
+    "phone": ["2", "222"]
   }]
 }
 ```
