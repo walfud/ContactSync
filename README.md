@@ -8,7 +8,7 @@ query ($token: String!) {
   contacts(token: $token) {
     id
     name
-    phone
+    phones
   }
 }
 ------------
@@ -23,7 +23,7 @@ mutation ($token: String!, $contacts: [ContactInputType]!) {
   sync(token: $token, contacts: $contacts) {
     id
     name
-    phone
+    phones
   }
 }
 ------------
@@ -32,10 +32,10 @@ variable
   "token": "oid1",
   "contacts": [{
     "name": "a",
-    "phone": ["1"]
+    "phones": ["1"]
   },{
     "name": "b",
-    "phone": ["2", "222"]
+    "phones": ["2", "222"]
   }]
 }
 ```
