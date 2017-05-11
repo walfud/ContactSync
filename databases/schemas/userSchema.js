@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     contacts: [{
         name: String,
         phones: [String],
-        last_update: Date,
+        last_update: Number,
     }],
 });
 
