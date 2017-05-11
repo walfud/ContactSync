@@ -27,7 +27,7 @@ const ContactType = new GraphQLObjectType({
     fields: {
         name: { type: GraphQLString },
         phones: { type: new GraphQLList(GraphQLString) },
-        last_update: { type: GraphQLLong },
+        modify_time: { type: GraphQLLong },
     }
 });
 const Query = new GraphQLObjectType({
@@ -48,9 +48,10 @@ const Query = new GraphQLObjectType({
 const ContactInputType = new GraphQLInputObjectType({
     name: 'ContactInputType',
     fields: {
-        name: { type: new GraphQLNonNull(GraphQLString) },
-        phones: { type: new GraphQLNonNull(new GraphQLList(GraphQLString)) },
-        last_update: { type: GraphQLLong },
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        phones: { type: new GraphQLList(new GraphQLNonNull(GraphQLString)) },
+        modify_time: { type: GraphQLLong },
     }
 });
 const SyncDataInputType = new GraphQLInputObjectType({
@@ -78,42 +79,41 @@ const Mutation = new GraphQLObjectType({
                     serverContacts = user.contacts;
                 }
 
-                // First handle deleted contacts
-                console.log(clientDels);
-                clientDels.forEach((del) => {
-                    const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, del));
-                    if (index != -1) {
-                        console.log(`delete: ${util.inspect(del)}`);
+                console.log(clientAdds);
+                clientAdds.forEach((add) => {
+                    const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, add));
+                    if (index == -1) {
+                        console.log(`add: ${util.inspect(add)}`);
 
-                        serverContacts[index] = del;
-                        serverContacts[index].is_deleted = true;
+                        // add.id = uuidV4();
+                        add.id = add.name;      // DEBUG
+                        serverContacts.push(add);
                     }
                 });
 
-                // // Then, modifieds'
-                // const modContacts = (clientMods || []).map(({ "new": mod, old: oldContact }) => clientContacts[mod]);
-                // console.log(modContacts);
-                // (clientMods || []).forEach(({ mod, oldContact }) => {
-                //     const modContact = clientContacts[mod];
-                //     const index = _.findIndex(serverContacts.map(serverContact => isSameContact(serverContact, oldContact)));
-                //     if (index != -1) {
-                //         console.log(`modify: ${util.inspect(oldContact)} => ${util.inspect(modContact)}`);
-                //         console.log(`add: ${util.inspect(addContact)}`);
+                console.log(clientMods);
+                (clientMods || []).forEach(mod => {
+                    const index = _.findIndex(serverContacts, serverContact => serverContact.id == mod.id);
+                    if (index != -1) {
+                        console.log(`modify: ${util.inspect(serverContacts[index])} => ${util.inspect(mod)}`);
 
-                //         serverContacts[index] = modContact;
-                //     }
-                // });
+                        serverContacts[index] = mod;
+                    } else {
+                        console.warn(`WRONG: modify: id(${mod.id})`);
+                    }
+                });
 
-                // // Finally Addeds'
-                // console.log(clientAdds);
-                // clientAdds.forEach((add) => {
-                //     const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, add));
-                //     if (index == -1) {
-                //         console.log(`add: ${util.inspect(add)}`);
+                console.log(clientDels);
+                clientDels.forEach((del) => {
+                    const index = _.findIndex(serverContacts, serverContact => serverContact.id == del.id);
+                    if (index != -1) {
+                        console.log(`delete: ${util.inspect(serverContacts[index])}`);
 
-                //         serverContacts.push(add);
-                //     }
-                // });
+                        serverContacts[index].is_deleted = true;
+                    } else {
+                        console.warn(`WRONG: delete: id(${del.id})`);
+                    }
+                });
 
                 await UserModel.update({ oid }, { $set: { contacts: serverContacts } }, { upsert: true });
 
@@ -139,7 +139,7 @@ function isSameContact({ nameA, phonesA }, { nameB, phonesB }) {
  * 
  */
 function isModifiedAfter(before, after) {
-    return isSameContact(before, after) && before.lastUpdate > after.lastUpdate;
+    return isSameContact(before, after) && before.modify_time > after.modify_time;
 }
 
 
