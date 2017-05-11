@@ -53,20 +53,12 @@ const ContactInputType = new GraphQLInputObjectType({
         last_update: { type: GraphQLLong },
     }
 });
-const ModContactInputType = new GraphQLInputObjectType({
-    name: 'ModContactInputType',
-    fields: {
-        new: { type: new GraphQLNonNull(GraphQLInt) },
-        old: { type: new GraphQLNonNull(ContactInputType) },
-    }
-});
 const SyncDataInputType = new GraphQLInputObjectType({
     name: 'SyncDataInputType',
     fields: {
-        contacts: { type: new GraphQLNonNull(new GraphQLList(ContactInputType)) },
-        adds: { type: new GraphQLList(GraphQLInt) },
-        mods: { type: new GraphQLList(ModContactInputType) },
-        dels: { type: new GraphQLList(GraphQLInt) },
+        adds: { type: new GraphQLList(ContactInputType) },
+        mods: { type: new GraphQLList(ContactInputType) },
+        dels: { type: new GraphQLList(ContactInputType) },
     }
 });
 const Mutation = new GraphQLObjectType({
@@ -76,9 +68,9 @@ const Mutation = new GraphQLObjectType({
             type: new GraphQLList(ContactType),
             args: {
                 token: { type: new GraphQLNonNull(GraphQLString) },
-                data: { type: new GraphQLNonNull(SyncDataInputType) },
+                contacts: { type: new GraphQLNonNull(SyncDataInputType) },
             },
-            async resolve(source, { token, data: { contacts: clientContacts, adds: clientAdds, mods: clientMods, dels: clientDels } }) {
+            async resolve(source, { token, contacts: { adds: clientAdds, mods: clientMods, dels: clientDels } }) {
                 const oid = await network.getOauthId(token);
                 const user = await UserModel.findOne({ oid });
                 let serverContacts = [];
@@ -86,17 +78,17 @@ const Mutation = new GraphQLObjectType({
                     serverContacts = user.contacts;
                 }
 
-                // // First handle deleted contacts
-                // const delContacts = (clientDels || []).map(del => clientContacts[del]);
-                // console.log(delContacts);
-                // delContacts.forEach((delContact) => {
-                //     const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, delContact));
-                //     if (index != -1) {
-                //         console.log(`delete: ${util.inspect(delContact)}`);
+                // First handle deleted contacts
+                console.log(clientDels);
+                clientDels.forEach((del) => {
+                    const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, del));
+                    if (index != -1) {
+                        console.log(`delete: ${util.inspect(del)}`);
 
-                //         serverContacts.splice(index, index + 1);
-                //     }
-                // });
+                        serverContacts[index] = del;
+                        serverContacts[index].is_deleted = true;
+                    }
+                });
 
                 // // Then, modifieds'
                 // const modContacts = (clientMods || []).map(({ "new": mod, old: oldContact }) => clientContacts[mod]);
@@ -112,17 +104,16 @@ const Mutation = new GraphQLObjectType({
                 //     }
                 // });
 
-                // Finally Addeds'
-                const addContacts = (clientAdds || []).map(add => clientContacts[add]);
-                console.log(addContacts);
-                addContacts.forEach((addContact) => {
-                    const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, addContact));
-                    if (index == -1) {
-                        console.log(`add: ${util.inspect(addContact)}`);
+                // // Finally Addeds'
+                // console.log(clientAdds);
+                // clientAdds.forEach((add) => {
+                //     const index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, add));
+                //     if (index == -1) {
+                //         console.log(`add: ${util.inspect(add)}`);
 
-                        serverContacts.push(addContact);
-                    }
-                });
+                //         serverContacts.push(add);
+                //     }
+                // });
 
                 await UserModel.update({ oid }, { $set: { contacts: serverContacts } }, { upsert: true });
 
