@@ -4,9 +4,9 @@ const userSchema = new mongoose.Schema({
     oid: String,
 
     contacts: [{
-        id: String,
         name: String,
         phones: [String],
+        last_update: Date,
     }],
 });
 

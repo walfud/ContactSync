@@ -6,9 +6,9 @@ Query
 ```graphql
 query ($token: String!) {
   contacts(token: $token) {
-    id
     name
     phones
+    last_update
   }
 }
 ------------
@@ -21,9 +21,9 @@ Mutation
 ```graphql
 mutation ($token: String!, $contacts: [ContactInputType]!) {
   sync(token: $token, contacts: $contacts) {
-    id
     name
     phones
+    last_update
   }
 }
 ------------
@@ -32,10 +32,15 @@ variable
   "token": "oid1",
   "contacts": [{
     "name": "a",
-    "phones": ["1"]
+    "phones": ["1"],
+    "last_update": 1494474854
   },{
     "name": "b",
-    "phones": ["2", "222"]
+    "phones": ["2", "222"],
+    "last_update": 1494474854
   }]
 }
 ```
+
+# todo
+1. docker (compose)

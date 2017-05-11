@@ -13,6 +13,8 @@ const GraphQLSchema = require('graphql').GraphQLSchema;
 const GraphQLString = require('graphql').GraphQLString;
 const GraphQLUnionType = require('graphql').GraphQLUnionType;
 const uuidV4 = require('uuid/v4');
+const _ = require('underscore');
+const util = require('util');
 
 const UserModel = require('../services/db').UserModel;
 const network = require('../services/network');
@@ -20,9 +22,9 @@ const network = require('../services/network');
 const ContactType = new GraphQLObjectType({
     name: 'ContactType',
     fields: {
-        id: { type: GraphQLID },
         name: { type: GraphQLString },
         phones: { type: new GraphQLList(GraphQLString) },
+        last_update: { type: GraphQLInt },
     }
 });
 const Query = new GraphQLObjectType({
@@ -43,8 +45,25 @@ const Query = new GraphQLObjectType({
 const ContactInputType = new GraphQLInputObjectType({
     name: 'ContactInputType',
     fields: {
-        name: { type: GraphQLString },
-        phones: { type: new GraphQLList(GraphQLString) },
+        name: { type: new GraphQLNonNull(GraphQLString) },
+        phones: { type: new GraphQLNonNull(new GraphQLList(GraphQLString)) },
+        last_update: { type: GraphQLInt },
+    }
+});
+const ModContactInputType = new GraphQLInputObjectType({
+    name: 'ModContactInputType',
+    fields: {
+        new: { type: new GraphQLNonNull(GraphQLInt) },
+        old: { type: new GraphQLNonNull(ContactInputType) },
+    }
+});
+const SyncDataInputType = new GraphQLInputObjectType({
+    name: 'SyncDataInputType',
+    fields: {
+        contacts: { type: new GraphQLNonNull(new GraphQLList(ContactInputType)) },
+        adds: { type: new GraphQLList(GraphQLInt) },
+        mods: { type: new GraphQLList(ModContactInputType) },
+        dels: { type: new GraphQLList(GraphQLInt) },
     }
 });
 const Mutation = new GraphQLObjectType({
@@ -54,17 +73,51 @@ const Mutation = new GraphQLObjectType({
             type: new GraphQLList(ContactType),
             args: {
                 token: { type: new GraphQLNonNull(GraphQLString) },
-                contacts: { type: new GraphQLNonNull(new GraphQLList(ContactInputType)) }
+                data: { type: new GraphQLNonNull(SyncDataInputType) },
             },
-            async resolve(source, { token, contacts }) {
+            async resolve(source, { token, data: { contacts: clientContacts, adds: clientAdds, mods: clientMods, dels: clientDels } }) {
                 const oid = await network.getOauthId(token);
-                const contactsWithId = contacts.map(contact => {
-                    contact.id = uuidV4();
-                    return contact;
-                })
-                await UserModel.update({ oid }, { oid, contacts: contactsWithId, }, { upsert: true }).exec();
+                const serverContacts = await UserModel.findOne({ oid }, 'contacts') || [];
 
-                return contacts || [];
+                // First handle deleted contacts
+                const delContacts = (clientDels || []).map(del => clientContacts[del]);
+                console.log(delContacts);                
+                delContacts.forEach((delContact) => {
+                    const index = _.findIndex(serverContacts, serverContact => _.isEqual(serverContact, delContact));
+                    if (index != -1) {
+                        console.log(`delete: ${util.inspect(delContact)}`);
+
+                        serverContacts.splice(index, index + 1);
+                    }
+                });
+
+                // Then, modifieds'
+                const modContacts = (clientDels || []).map(del => clientContacts[del]);
+                console.log(modContacts);                
+                (clientMods || []).forEach((newIndex, oldContact) => {
+                    const index = _.findIndex(serverContacts.map(serverContact => ({ name: serverContact.name, phones: serverContact.phones }),
+                        serverContactWithoutUpdatetime => _.isEqual(serverContactWithoutUpdatetime, oldContact)));
+                    if (index != -1) {
+                        console.log(`modify: ${util.inspect(oldContact)} => ${util.inspect(clientContacts[newIndex])}`);
+                        console.log(`add: ${util.inspect(addContact)}`);
+
+                        serverContacts[index] = clientContacts[newIndex];
+                    }
+                });
+
+                // Finally Addeds'
+                const addContacts = (clientAdds || []).map(add => clientContacts[add]);
+                console.log(addContacts);
+                addContacts.forEach((addContact) => {
+                    const index = _.findIndex(serverContacts, serverContact => _.isEqual(serverContact, addContact));
+                    if (index == -1) {
+                        console.log(`add: ${util.inspect(addContact)}`);
+
+                        serverContacts.push(addContact);
+                    }
+                });
+
+                return [];
             }
         }
     },
@@ -74,6 +127,8 @@ async function getContacts(token) {
     const oid = await network.getOauthId(token);
     return UserModel.findOne({ oid }).exec().then(user => user ? user.contacts : []);
 }
+
+// function tidy() {}
 
 const schema = new GraphQLSchema({
     query: Query,
