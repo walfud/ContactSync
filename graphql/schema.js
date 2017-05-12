@@ -156,7 +156,7 @@ const Mutation = new GraphQLObjectType({
                     }
                 })
 
-                // await UserModel.update({ oid }, { $set: { contacts: serverContacts } }, { upsert: true });
+                await UserModel.update({ oid }, { $set: { contacts: serverContacts } }, { upsert: true });
 
                 return {
                     to_fills,
