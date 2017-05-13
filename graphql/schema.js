@@ -78,6 +78,13 @@ const SyncOutputType = new GraphQLObjectType({
 const Mutation = new GraphQLObjectType({
     name: 'Mutation',
     fields: {
+        /**
+         * Input:
+         *  客户端根据客户端本地数据库， 分析出 *添加(want_adds) / 修改(want_mods) / 删除(want_dels)* 分组。
+         * Output:
+         *  服务端经过排重，合并操作后， 返回 *添加(to_adds) / 修改(to_mods) / 删除(to_dels)* 的分组指令。此时， 客户端应根据此指令
+         * 执行相应的操作。
+         */
         sync: {
             type: SyncOutputType,
             args: {
