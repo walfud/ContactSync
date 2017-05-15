@@ -60,116 +60,65 @@ const ContactInputType = new GraphQLInputObjectType({
 const SyncDataInputType = new GraphQLInputObjectType({
     name: 'SyncDataInputType',
     fields: {
-        want_adds: { type: new GraphQLList(ContactInputType) },
-        want_mods: { type: new GraphQLList(ContactInputType) },
-        want_dels: { type: new GraphQLList(ContactInputType) },
-        unchanges: { type: new GraphQLList(ContactInputType) },
+        contacts: { type: new GraphQLList(ContactInputType) },
     }
 });
 const SyncOutputType = new GraphQLObjectType({
     name: 'SyncOutputType',
     fields: {
-        to_fills: { type: new GraphQLList(GraphQLID) },
-        to_adds: { type: new GraphQLList(ContactType) },
-        to_mods: { type: new GraphQLList(ContactType) },
-        to_dels: { type: new GraphQLList(ContactType) },
+        contacts: { type: new GraphQLList(ContactType) },
     }
 });
 const Mutation = new GraphQLObjectType({
     name: 'Mutation',
     fields: {
         /**
-         * Input:
-         *  客户端根据客户端本地数据库， 分析出 *添加(want_adds) / 修改(want_mods) / 删除(want_dels)* 分组。
-         * Output:
-         *  服务端经过排重，合并操作后， 返回 *添加(to_adds) / 修改(to_mods) / 删除(to_dels)* 的分组指令。此时， 客户端应根据此指令
-         * 执行相应的操作。
+         * 
          */
         sync: {
             type: SyncOutputType,
             args: {
                 token: { type: new GraphQLNonNull(GraphQLString) },
-                contacts: { type: new GraphQLNonNull(SyncDataInputType) },
+                contacts: { type: new GraphQLNonNull(new GraphQLList(ContactInputType)) },
             },
-            async resolve(source, { token, contacts: { want_adds: clientAdds, want_mods: clientMods, want_dels: clientDels, unchanges: clientUnchanges } }) {
+            async resolve(source, { token, contacts: clientContacts }) {
                 const oid = await network.getOauthId(token);
                 const user = await UserModel.findOne({ oid }) || {};
                 const serverContacts = user.contacts || [];
-                const clientContacts = [];
-                const to_fills = [];
-                console.log(clientAdds);
-                clientAdds.forEach(add => {
-                    const index = _.findIndex(serverContacts.filter(serverContact => !serverContact.is_deleted), serverContact => isSameContact(serverContact, add));
+                const retContacts = [];
+                clientContacts.forEach(clientContact => {
+                    let index = _.findIndex(serverContacts, serverContact => serverContact.id == clientContact.id);
                     if (index == -1) {
-                        console.log(`add: ${util.inspect(add)}`);
-                        const id = add.name;      // DEBUG: uuidV4()
-                        add.id = id;
-                        add.is_deleted = false;
-                        serverContacts.push(add);
-                        clientContacts.push(serverContacts[serverContacts.length-1]);
-                        to_fills.push(id);
-                    } else {
-                        clientContacts.push(serverContacts[index]);
-                        to_fills.push(serverContacts[index].id);
-                    }
-                });
-
-                console.log(clientMods);
-                (clientMods || []).forEach(mod => {
-                    const index = _.findIndex(serverContacts, serverContact => serverContact.id == mod.id);
-                    if (index != -1) {
-                        console.log(`modify: ${util.inspect(serverContacts[index])} => ${util.inspect(mod)}`);
-
-                        serverContacts[index] = mod;
-                        clientContacts.push(serverContacts[index]);
-                    } else {
-                        console.warn(`WRONG: modify: id(${mod.id})`);
-                    }
-                });
-
-                console.log(clientDels);
-                clientDels.forEach(del => {
-                    const index = _.findIndex(serverContacts, serverContact => serverContact.id == del.id);
-                    if (index != -1) {
-                        console.log(`delete: ${util.inspect(serverContacts[index])}`);
-
-                        serverContacts[index].is_deleted = true;
-                        clientContacts.push(serverContacts[index]);
-                    } else {
-                        console.warn(`WRONG: delete: id(${del.id})`);
-                    }
-                });
-
-                // 
-                console.log(clientUnchanges);
-                const to_adds = [], to_mods = [], to_dels = [];
-                const diffServerContacts = _.difference(serverContacts, clientContacts);
-                diffServerContacts.forEach(diffServerContact => {
-                    const index = _.findIndex(clientUnchanges, unchange => unchange.id == diffServerContact.id);
-                    if (index == -1) {
-                        // Add to client 
-                        to_adds.push(diffServerContact);
-                    } else {
-                        // Sync to client
-                        if (!diffServerContact.is_deleted) {
-                            if (!isSameContact(diffServerContact, clientUnchanges[index])) {
-                                // Modify client
-                                to_mods.push(diffServerContact);
-                            }
-                        } else {
-                            // Delete client
-                            to_dels.push(diffServerContact);
+                        index = _.findIndex(serverContacts, serverContact => isSameContact(serverContact, clientContact));
+                        if (index != -1) {
+                            // Fill id
+                            clientContact.id = serverContacts[index].id;
                         }
                     }
-                })
 
-                await UserModel.update({ oid }, { $set: { contacts: serverContacts } }, { upsert: true });
+                    if (index != -1) {
+                        // Modify existing
+                        if (!isSame(serverContacts[index], clientContact)) {
+                            console.log(`modify: ${util.inspect(serverContacts[index])} => ${util.inspect(clientContact)}`);
+                            serverContacts[index] = clientContact;
+                        }
+                        retContacts.push(serverContacts[index]);
+                    } else {
+                        // Add to db
+                        console.log(`add: ${util.inspect(clientContact)}`);
+                        clientContact.id = clientContact.name;   // DEBUG: uuidV4()   
+                        serverContacts.push(clientContact);
+                        retContacts.push(serverContacts[serverContacts.length - 1]);
+                    }
+                });
+
+                // await UserModel.update({ oid }, { $set: { contacts: serverContacts } }, { upsert: true });
+
+                const diffContacts = _.difference(serverContacts, retContacts);
+                retContacts.push(...diffContacts);
 
                 return {
-                    to_fills,
-                    to_adds,
-                    to_mods,
-                    to_dels,
+                    contacts: retContacts,
                 };
             }
         }
@@ -183,6 +132,14 @@ async function getContacts(token) {
 
 function isSameContact({ name: nameA, phones: phonesA }, { name: nameB, phones: phonesB }) {
     return nameA == nameB && _.isEqual(phonesA, phonesB);
+}
+
+function isSame(a, b) {
+    return a.id == b.id
+        && a.name == b.name
+        && _.isEqual(a.phones, b.phones)
+        && a.modify_time == b.modify_time
+        && a.is_deleted == b.is_deleted;
 }
 
 /**
