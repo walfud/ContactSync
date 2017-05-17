@@ -9,7 +9,7 @@ db.user.insertOne({
             "id": "x",
             "name": "x",
             "phones": [
-                "test client add"
+                "7"
             ],
             "modify_time": 1494474854000,
             is_deleted: false,
@@ -18,7 +18,7 @@ db.user.insertOne({
             "id": "y",
             "name": "y",
             "phones": [
-                "test client modify"
+                "8"
             ],
             "modify_time": 1494474854000,
             is_deleted: false,
@@ -27,7 +27,7 @@ db.user.insertOne({
             "id": "z",
             "name": "z",
             "phones": [
-                "test client delete"
+                "9"
             ],
             "modify_time": 1494474854000,
             is_deleted: true,
@@ -37,7 +37,7 @@ db.user.insertOne({
             "id": "a",
             "name": "a",
             phones: [
-                "test server pass"
+                "1"
             ],
             modify_time: 1494474854000,
             is_deleted: false,
@@ -46,7 +46,7 @@ db.user.insertOne({
             "id": "b",
             "name": "b",
             phones: [
-                "test server modify"
+                "2"
             ],
             modify_time: 1494474854000,
             is_deleted: false,
@@ -55,7 +55,7 @@ db.user.insertOne({
             "id": "c",
             "name": "c",
             "phones": [
-                "test server delete"
+                "3"
             ],
             "modify_time": 1494474854000,
             is_deleted: false,
