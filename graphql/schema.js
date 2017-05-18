@@ -99,8 +99,13 @@ const Mutation = new GraphQLObjectType({
                     if (index != -1) {
                         // Modify existing
                         if (!isSame(serverContacts[index], clientContact)) {
-                            console.log(`modify: ${util.inspect(serverContacts[index])} => ${util.inspect(clientContact)}`);
-                            serverContacts[index] = clientContact;
+                            if (serverContacts[index].modify_time < clientContact.modify_time) {
+                                // Use client's
+                                console.log(`modify: ${util.inspect(serverContacts[index])} => ${util.inspect(clientContact)}`);
+                                serverContacts[index] = clientContact;
+                            } else {
+                                // Keep server's
+                            }
                         }
                         retContacts.push(serverContacts[index]);
                     } else {

@@ -11,7 +11,7 @@ db.user.insertOne({
             "phones": [
                 "7"
             ],
-            "modify_time": 1494474854000,
+            "modify_time": 9494474854000,
             is_deleted: false,
         },
         {
@@ -20,7 +20,7 @@ db.user.insertOne({
             "phones": [
                 "8"
             ],
-            "modify_time": 1494474854000,
+            "modify_time": 9494474854000,
             is_deleted: false,
         },
         {
@@ -29,7 +29,7 @@ db.user.insertOne({
             "phones": [
                 "9"
             ],
-            "modify_time": 1494474854000,
+            "modify_time": 9494474854000,
             is_deleted: true,
         },
 
