@@ -5,6 +5,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "fetch-node": "0.0.1",
     "graphql": "^0.9.6",
     "graphql-type-long": "0.0.2",
     "koa": "^2.2.0",
