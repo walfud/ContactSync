@@ -82,7 +82,7 @@ const Mutation = new GraphQLObjectType({
                 contacts: { type: new GraphQLNonNull(new GraphQLList(ContactInputType)) },
             },
             async resolve(source, { token, contacts: clientContacts }) {
-                const oid = await network.getOauthId(token);
+                const oid = await network.fetchOid(token);
                 const user = await UserModel.findOne({ oid }) || {};
                 const serverContacts = user.contacts || [];
                 const retContacts = [];
@@ -131,7 +131,7 @@ const Mutation = new GraphQLObjectType({
 });
 
 async function getContacts(token) {
-    const oid = await network.getOauthId(token);
+    const oid = await network.fetchOid(token);
     return UserModel.findOne({ oid }).exec().then(user => user ? user.contacts : []);
 }
 
