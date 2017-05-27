@@ -13,4 +13,4 @@ app.use(require('./routes/index').routes());
 app.use(require('./routes/cb').routes());
 app.use(require('./routes/graphql').routes());
 
-app.listen(51955);
+app.listen(3000);
