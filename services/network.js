@@ -1,6 +1,5 @@
 const http = require('http');
 const fetch = require('node-fetch');
-const querystring = require('querystring');
 
 /**
  * return: oid: String
@@ -11,7 +10,7 @@ async function fetchOid(token) {
             'X-Access-Token': token,
         }
     });
-    const user = await res.json();
+    const user = await response.json();
     return user.oid;
 }
 
