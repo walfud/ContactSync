@@ -7,7 +7,7 @@ const router = new Router();
  * 转发给认证服务器
  */
 router.post('/cb', async (cxt, next) => {
-    cxt.body = await fetch('http://localhost:48906/token', {
+    cxt.body = await fetch('http://oauth2.walfud.com/token', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

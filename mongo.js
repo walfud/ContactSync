@@ -1,5 +1,5 @@
 
-db = connect("localhost:27017/contactsync");
+db = connect(process.env.MONGO_URI);
 db.user.drop();
 db.user.insertOne({
     oid: "oid1",

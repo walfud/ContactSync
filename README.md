@@ -1,6 +1,6 @@
 # ContactSync
 
-[TEST](http://localhost:51955/graphql)
+[TEST](http://contactsync.walfud.com/graphql)
 
 Mutation
 ```graphql

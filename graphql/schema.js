@@ -111,7 +111,7 @@ const Mutation = new GraphQLObjectType({
                     } else {
                         // Add to db
                         console.log(`add: ${util.inspect(clientContact)}`);
-                        clientContact.id = clientContact.name;   // DEBUG: uuidV4()   
+                        clientContact.id = uuidV4();
                         serverContacts.push(clientContact);
                         retContacts.push(serverContacts[serverContacts.length - 1]);
                     }
