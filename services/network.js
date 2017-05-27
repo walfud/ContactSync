@@ -5,7 +5,7 @@ const querystring = require('querystring');
 /**
  * return: oid: String
  */
-async function getOauthId(token) {
+async function fetchOid(token) {
     const response = await fetch(`http://oauth2.walfud.com/user`, {
         headers: {
             'X-Access-Token': token,
@@ -16,5 +16,5 @@ async function getOauthId(token) {
 }
 
 module.exports = {
-    getOauthId,
+    fetchOid,
 }
