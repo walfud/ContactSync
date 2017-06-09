@@ -10,7 +10,7 @@ router.post('/cb', async (cxt, next) => {
     cxt.body = await fetch('http://oauth2.walfud.com/token', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'X-Access-Token': cxt.request.header['x-access-token'],
         },
         body: JSON.stringify(cxt.request.body),
