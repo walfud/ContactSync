@@ -4,8 +4,7 @@ services:
   node:
     image: node
     container_name: contactsync
-    environment:
-      - MONGO_URI=${MONGO_URI}
+    env_file: .env
     working_dir: /ContactSync
     command: npm start
     volumes:
