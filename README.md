@@ -5,22 +5,14 @@
 Mutation
 ```graphql
  mutation ($token: String!, $contacts: [ContactInputType]!) {
-  sync(token: $token, contacts: $contacts) {
-    contacts {
-      id
-      name
-      phones
-      modify_time
-      is_deleted
-    }
-  }
+  upload(token: $token, contacts: $contacts)
 }
 ------------
 {
-  "token": "oid1",
+  "token": "48d61801-8f27-496f-b25d-955f9b4d4af9",
   "contacts": [
     {
-      "name": "a",
+      "name": "serverA",
       "phones": [
         "1"
       ],
@@ -28,31 +20,22 @@ Mutation
       "is_deleted": false
     },
     {
-      "name": "a2",
+      "name": "serverB",
       "phones": [
-        "122222"
+        "2222",
+        "2222.2222",
       ],
       "modify_time": 1494474854000,
       "is_deleted": false
     },
     {
-      "id": "b",
-      "name": "b",
+      "name": "serverC",
       "phones": [
-        "2"
+        "3333"
       ],
       "modify_time": 1494474854000,
       "is_deleted": false
     },
-    {
-      "id": "c",
-      "name": "c",
-      "phones": [
-        "3"
-      ],
-      "modify_time": 1494474854000,
-      "is_deleted": true
-    }
   ]
 }
 ```
